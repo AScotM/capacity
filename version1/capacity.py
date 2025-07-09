@@ -82,14 +82,15 @@ def collect_storage_info(include_all: bool = False, sort_key: str = "percent", p
                 logger.error(f"Invalid percent value for {part.mountpoint}: {usage.percent}, skipping")
                 continue
 
+            # Correct tuple order to match table columns
             row = (
-                part.mountpoint,         # str
-                bytes_to_gb(usage.total),  # float
-                bytes_to_gb(usage.used),   # float
-                bytes_to_gb(usage.free),   # float
-                percent,                 # float
-                fs_type,                 # str
-                part.device              # str
+                part.device,             # Device
+                part.mountpoint,         # Mount Point
+                bytes_to_gb(usage.total),  # Total (GB)
+                bytes_to_gb(usage.used),   # Used (GB)
+                bytes_to_gb(usage.free),   # Free (GB)
+                percent,                 # Use %
+                fs_type                  # Filesystem
             )
             logger.debug(f"Adding row: {row}")
             rows.append(row)
@@ -105,11 +106,11 @@ def collect_storage_info(include_all: bool = False, sort_key: str = "percent", p
             continue
 
     sort_indices = {
-        "mount": 0,
-        "total": 1,
-        "used": 2,
-        "free": 3,
-        "percent": 4
+        "mount": 1,   # part.mountpoint
+        "total": 2,   # total_gb
+        "used": 3,    # used_gb
+        "free": 4,    # free_gb
+        "percent": 5  # usage_percent
     }
     return sorted(rows, key=lambda x: x[sort_indices[sort_key]], reverse=(sort_key != "mount"))
 
@@ -133,7 +134,7 @@ def print_storage_table(rows: List[Tuple], show_colors: bool = True) -> None:
 
     for row in rows:
         device, mount, total, used, free, percent, fs_type = row
-        logger.debug(f"Processing row: percent={percent}, type={type(percent)}")
+        logger.debug(f"Processing row: device={device}, mount={mount}, percent={percent}, type={type(percent)}")
         
         # Ensure percent is a float for color calculation
         try:
@@ -142,7 +143,7 @@ def print_storage_table(rows: List[Tuple], show_colors: bool = True) -> None:
             logger.error(f"Invalid percent value for {mount}: {percent}, using 0 for color calculation")
             percent_float = 0.0
         
-        percent_str = f"{percent}%"
+        percent_str = f"{percent_float}%"
         
         if show_colors and sys.stdout.isatty():
             color = get_color_for_usage(percent_float)
